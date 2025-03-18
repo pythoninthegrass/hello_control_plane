@@ -2,8 +2,9 @@ resource "cpln_workload" "httpbin-example-workload-resource" {
   name                 = "httpbin-example"
   description          = "httpbin-example"
   gvc                  = var.gvc
-  type                 = "serverless"
+  type                 = "standard"
   support_dynamic_tags = false
+
   container {
     name   = "httpbin"
     image  = "kennethreitz/httpbin"
@@ -14,31 +15,51 @@ resource "cpln_workload" "httpbin-example-workload-resource" {
       protocol = "http"
     }
   }
+
+  container {
+    name   = "redis"
+    image  = "redis:latest"
+    cpu    = "100m"
+    memory = "256Mi"
+    ports {
+      number   = var.redis_ports[0]
+      protocol = "tcp"
+    }
+  }
+
   options {
     timeout_seconds = 5
-    capacity_ai     = true
+    capacity_ai     = false
     debug           = false
     suspend         = false
     autoscaling {
-      metric              = "concurrency"
-      target              = 100
-      min_scale           = 1
-      max_scale           = 3
-      scale_to_zero_delay = 300
-      max_concurrency     = 1000
+      metric    = "cpu"
+      target    = 70
+      min_scale = 1
+      max_scale = 3
     }
   }
+
   firewall_spec {
     external {
-      inbound_allow_cidr      = ["0.0.0.0/0"]
+      inbound_allow_cidr  = [var.inbound_cidr]
+      outbound_allow_cidr = ["0.0.0.0/0"]
+      outbound_allow_port {
+        protocol = "tcp"
+        number   = var.redis_ports[0]
+      }
+      outbound_allow_port {
+        protocol = "tcp"
+        number   = var.redis_ports[1]
+      }
       outbound_allow_hostname = []
-      outbound_allow_cidr     = ["0.0.0.0/0"]
     }
     internal {
-      inbound_allow_type     = "none"
+      inbound_allow_type     = "same-gvc"
       inbound_allow_workload = []
     }
   }
+
   load_balancer {
     direct {
       enabled = false

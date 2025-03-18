@@ -19,7 +19,14 @@ variable "gvc" {
   description = "Global Virtual Cloud name"
 }
 
-# variable "refresh_token" {
-#   type = string
-#   default = "refresh_token"
-# }
+variable "inbound_cidr" {
+  type        = string
+  description = "CIDR block for inbound access"
+  default     = "0.0.0.0/0"
+}
+
+variable "redis_ports" {
+  type        = list(number)
+  description = "Redis ports to allow (standard and SSL)"
+  default     = [6379, 6380]
+}
